@@ -6,6 +6,8 @@ config.json
 .env
 .env.*
 
+data/
+
 .venv/
 venv/
 env/
