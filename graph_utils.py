@@ -1,13 +1,16 @@
 # graph_utils.py
+import hashlib
 import json
 import logging
 import os
+from pathlib import Path
 
-import streamlit.components.v1 as components
+import streamlit as st
 
 logger = logging.getLogger(__name__)
 
 TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), "templates", "graph.html")
+RUNTIME_GRAPH_DIR = os.path.join(os.path.dirname(__file__), "data", "runtime_graphs")
 
 def _text_width(text):
     return sum(2 if ord(char) > 127 else 1 for char in text)
@@ -69,6 +72,17 @@ def _render_graph_html(elements_json, node_count, edge_count):
         .replace("__NODE_COUNT__", str(node_count))
         .replace("__EDGE_COUNT__", str(edge_count))
     )
+
+def _write_runtime_graph_html(html_content):
+    os.makedirs(RUNTIME_GRAPH_DIR, exist_ok=True)
+    content_hash = hashlib.sha256(html_content.encode("utf-8")).hexdigest()[:16]
+    graph_path = os.path.join(RUNTIME_GRAPH_DIR, f"graph_{content_hash}.html")
+
+    if not os.path.exists(graph_path):
+        with open(graph_path, "w", encoding="utf-8") as graph_file:
+            graph_file.write(html_content)
+
+    return Path(graph_path)
 
 def visualize_graph(nodes, edges):
     logger.debug("图谱节点：%s", nodes)
@@ -147,4 +161,4 @@ def visualize_graph(nodes, edges):
     logger.debug("图谱可视化元素：%s", elements_json[:300])
 
     html_content = _render_graph_html(elements_json, len(nodes), len(unique_edges))
-    components.html(html_content, height=720, scrolling=False)
+    st.iframe(_write_runtime_graph_html(html_content), width="stretch", height=720)
